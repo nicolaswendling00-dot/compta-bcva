@@ -150,6 +150,7 @@ dialog .row > label { flex: 1; }
 .gate { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: grid; place-items: center; padding: 16px; }
 .gate .card { width: min(420px, 100%); display: grid; gap: 14px; justify-items: start; padding: 28px; }
 .gate p { margin: 0; color: var(--mute); }
+.monthEnd { display: inline-block; background: #e9ecf0; border-radius: 4px; padding: 1px 8px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -519,6 +520,12 @@ function render() {
 
   const q = $('#search').value.trim().toLowerCase();
   const acc = r => r.account || 'banque';
+  // Dernière opération de chaque mois par compte (calculée avant les filtres), pour comparer avec les relevés
+  // shortcut: un retrait banque → caisse en fin de mois affiche le solde caisse, la banque est alors repérée sur l'opération précédente
+  const monthEnd = new Set();
+  const lastOf = {};
+  rows.forEach(r => { lastOf[(r.to || acc(r)) + r.date.slice(0, 7)] = r.idx; });
+  Object.values(lastOf).forEach(i => monthEnd.add(i));
   const shown = rows.filter(r => (!catFilter || r.category === catFilter) &&
     (!accFilter || acc(r) === accFilter || r.to === accFilter) &&
     (!q || (r.category + ' ' + r.note + ' ' + fmtDate(r.date) + ' ' + r.amount).toLowerCase().includes(q))).reverse();
@@ -527,7 +534,7 @@ function render() {
     <td>${fmtDate(r.date)}</td>
     <td>${r.to ? `Transfert ${ACC[acc(r)].toLowerCase()} → ${ACC[r.to].toLowerCase()}` : esc(r.category)}${acc(r) === 'caisse' && !r.to ? '<span class="tag">Caisse</span>' : ''}${r.note ? `<span class="note">${esc(r.note)}</span>` : ''}</td>
     <td class="num">${r.to ? eur.format(r.amount) : amt(r.amount)}</td>
-    <td class="num">${eur.format(r.bal[r.to || acc(r)])}</td>
+    <td class="num">${monthEnd.has(r.idx) ? `<span class="monthEnd" title="Solde de fin de mois">${eur.format(r.bal[r.to || acc(r)])}</span>` : eur.format(r.bal[r.to || acc(r)])}</td>
     <td>${locked() ? '' : `<button class="del" data-del="${r.idx}" title="Supprimer" aria-label="Supprimer">×</button>`}</td></tr>`).join('');
 
   // Résumé dans l'ordre choisi des catégories
