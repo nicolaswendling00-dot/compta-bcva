@@ -390,13 +390,13 @@ let data = { version: 3, categories: [], seasons: [{ name: '', opening: 0, tx: [
 let cur = 0, catFilter = '', accFilter = '', editing = null, collecting = null, sign = -1, unlocked = false, chart = null, chartAcc = 'total';
 const ACC = { banque: 'Banque', caisse: 'Caisse' };
 const other = a => a === 'caisse' ? 'banque' : 'caisse';
-const parseAmount = v => parseFloat(String(v).replace(/s/g, '').replace(',', '.'));
+const parseAmount = v => parseFloat(String(v).replace(/\s/g, '').replace(',', '.'));
 const time = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 function checkData(d) {
   const ok = d && Array.isArray(d.categories) && Array.isArray(d.seasons) && d.seasons.length &&
     d.seasons.every(s => typeof s.name === 'string' && Array.isArray(s.tx) &&
-      s.tx.every(t => /^d{4}-d{2}-d{2}$/.test(t.date) && isFinite(t.amount) && typeof t.category === 'string' &&
+      s.tx.every(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date) && isFinite(t.amount) && typeof t.category === 'string' &&
         [undefined, 'banque', 'caisse'].includes(t.account) && [undefined, 'banque', 'caisse'].includes(t.to)));
   if (!ok) throw new Error('fichier non reconnu');
   d.receivables ||= [];
