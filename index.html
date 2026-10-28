@@ -461,6 +461,8 @@ function save() {
 
 auth.onAuthStateChanged(user => {
   if (unsub) unsub();
+  // ouvert en double-clic (file://) : Google refuse la connexion, on renvoie vers le site
+  if (location.protocol === 'file:') return gate('Cette copie locale ne permet pas de se connecter. Ouvrez le site : https://nicolaswendling00-dot.github.io/compta-bad/');
   if (!user) return gate('Connectez-vous avec le compte Google autorisé par le bureau.', { login: true });
   gate('Chargement…');
   unsub = docRef.onSnapshot(s => {
