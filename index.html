@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compta Bad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap" rel="stylesheet">
+<style>
+/* Style sobre de logiciel de gestion : fond clair, filets fins, une seule couleur d'accent */
+:root {
+  --bg: #f5f6f8; --card: #fff; --line: #e3e6ea; --text: #1d2330; --mute: #6b7280;
+  --accent: #1f4e79; --in: #1a7f4b; --out: #b42318;
+  --font: 'Archivo', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--font); }
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 16px; }
+
+header { background: var(--card); border-bottom: 1px solid var(--line); }
+header { padding: 14px max(16px, calc((100% - 1200px) / 2 + 16px)); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+h1 { margin: 0; font-size: 18px; font-weight: 700; }
+h1 span { color: var(--mute); font-weight: 500; }
+nav { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 16px 20px; min-width: 0; }
+
+.pill { font: 500 13px var(--font); padding: 7px 14px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); cursor: pointer; white-space: nowrap; }
+.pill:hover { background: #f0f2f5; }
+.pill.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pill.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pill.primary:hover { background: #173d60; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: 6px; }
+.kpis .card { border: 0; border-radius: 0; border-right: 1px solid var(--line); }
+.kpis .card:last-child { border-right: 0; }
+.kpi .label { font-weight: 500; color: var(--mute); margin-bottom: 4px; }
+.kpi .v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.amt { display: inline-block; padding: 1px 8px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+.amt.pos { color: var(--in); background: #e7f4ec; } .amt.neg { color: var(--out); background: #fbeaea; }
+
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+label { display: grid; gap: 4px; font-size: 12px; font-weight: 500; color: var(--mute); }
+label.grow { flex: 1; min-width: 160px; }
+input, select { font: 400 14px var(--font); color: var(--text); background: #fff; border: 1px solid #cfd4da; border-radius: 4px; padding: 7px 10px; min-width: 0; }
+input:focus, select:focus { outline: 2px solid rgba(31, 78, 121, .25); border-color: var(--accent); }
+.form.editing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+.toggle { display: flex; border: 1px solid #cfd4da; border-radius: 4px; overflow: hidden; }
+.toggle button { font: 500 13px var(--font); border: 0; background: #fff; color: var(--mute); padding: 7px 14px; cursor: pointer; }
+.toggle button + button { border-left: 1px solid #cfd4da; }
+.toggle button.on[data-sign="1"] { background: #e7f4ec; color: var(--in); }
+.toggle button.on[data-sign="-1"] { background: #fbeaea; color: var(--out); }
+
+.cols { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; }
+.label span { color: var(--mute); font-weight: 400; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.scroll { max-height: 560px; overflow: auto; margin: 0 -20px -16px; }
+
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { position: sticky; top: 0; background: #fafbfc; text-align: left; font-size: 12px; font-weight: 600; color: var(--mute); padding: 8px 12px; border-bottom: 1px solid var(--line); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { padding-left: 20px; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: #f7f9fb; }
+.num { text-align: right; white-space: nowrap; }
+.note { display: block; font-size: 12px; color: var(--mute); }
+.del { background: none; border: 0; color: #9aa1ab; cursor: pointer; font-size: 16px; padding: 0 4px; }
+.del:hover { color: var(--out); }
+
+.cats { list-style: none; margin: 0; padding: 0; }
+.cats li { display: flex; justify-content: space-between; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); cursor: pointer; font-variant-numeric: tabular-nums; }
+.cats li:hover { color: var(--accent); }
+.cats li.sel { color: var(--accent); font-weight: 600; }
+
+footer { display: flex; flex-wrap: wrap; gap: 8px; }
+[hidden] { display: none !important; }
+
+/* Graphique */
+.chartWrap { position: relative; }
+#chart { width: 100%; height: 240px; display: block; font: 11px var(--font); }
+#chart text { fill: var(--mute); }
+#chart .grid { stroke: var(--line); }
+#chart .axis { stroke: #b8bec6; }
+#chart .area { fill: var(--accent); opacity: .08; }
+#chart .line { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+#chart .cursor { stroke: var(--mute); stroke-dasharray: 3 3; }
+#chart .dot { fill: #fff; stroke: var(--accent); stroke-width: 2; }
+.tip { position: absolute; pointer-events: none; background: var(--text); color: #fff; border-radius: 4px; padding: 5px 9px; font-size: 12px; white-space: nowrap; display: grid; }
+.tip span { color: #c9ced6; }
+
+/* Saison clôturée */
+.lockBar { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--mute); background: #fafbfc; }
+body.locked tbody tr { cursor: default; }
+
+.pill.small { padding: 3px 10px; font-size: 12px; }
+.row.end { justify-content: flex-end; margin-top: 16px; }
+
+/* Menu des catégories */
+.menu { border: 1px solid var(--line); border-radius: 6px; padding: 16px 20px; width: min(420px, calc(100% - 32px)); max-height: 80vh; overflow: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, .15); font: 14px var(--font); color: var(--text); }
+.menu::backdrop { background: rgba(0, 0, 0, .15); }
+.catEdit { list-style: none; margin: 0 0 12px; padding: 0; }
+.catEdit li { display: flex; align-items: center; gap: 2px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.catEdit li span { flex: 1; }
+.catEdit button { background: none; border: 0; color: var(--mute); cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 3px; }
+.catEdit button:hover:not(:disabled) { background: #f0f2f5; color: var(--text); }
+.catEdit button:disabled { opacity: .3; cursor: default; }
+
+dialog { border: 1px solid var(--line); border-radius: 6px; padding: 20px; width: min(420px, calc(100% - 32px)); font: 14px var(--font); color: var(--text); }
+dialog::backdrop { background: rgba(0, 0, 0, .25); }
+dialog form > label { margin-bottom: 12px; }
+dialog input { width: 100%; }
+dialog .row > label { flex: 1; }
+
+/* Caisse, sommes à percevoir, budget */
+.seg { display: flex; border: 1px solid #cfd4da; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+.seg button { font: 500 12px var(--font); border: 0; background: #fff; color: var(--mute); padding: 4px 10px; cursor: pointer; }
+.seg button + button { border-left: 1px solid #cfd4da; }
+.seg button.on { background: var(--accent); color: #fff; }
+.toggle button.on[data-sign="0"] { background: #e8eef5; color: var(--accent); }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; color: var(--accent); background: #e8eef5; border-radius: 3px; padding: 0 5px; margin-left: 6px; vertical-align: 1px; }
+.hint { color: var(--mute); font-size: 12px; margin: 0 0 10px; }
+#xferTo { align-self: center; margin: 0; padding-top: 18px; }
+.cols2 { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .cols2 { grid-template-columns: 1fr; } }
+.scroll.short { max-height: 420px; }
+.recv { list-style: none; margin: 0 0 12px; padding: 0; }
+.recv li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.recv li div { flex: 1; min-width: 0; }
+.recv li:first-child { border-top: 1px solid var(--line); }
+.recv .empty { color: var(--mute); }
+.budget input { width: 110px; text-align: right; padding: 4px 8px; }
+.budget td { padding-top: 4px; padding-bottom: 4px; }
+.budget tr.idle td:first-child { color: var(--mute); }
+.budget tfoot td { font-weight: 600; border-top: 2px solid var(--line); }
+.kpi .sub { font-size: 12px; color: var(--mute); margin-top: 2px; }
+
+/* Fichier partagé */
+.sync { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px max(16px, calc((100% - 1200px) / 2 + 16px)); background: #fafbfc; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--mute); }
+.sync #syncText { flex: 1; }
+.sync #syncText.err { color: #9a6700; }
+
+/* Écran de connexion */
+.gate { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: grid; place-items: center; padding: 16px; }
+.gate .card { width: min(420px, 100%); display: grid; gap: 14px; justify-items: start; padding: 28px; }
+.gate p { margin: 0; color: var(--mute); }
+.gate .row { width: 100%; }
+.gate input[type=email] { flex: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Compta <span>Bad</span></h1>
+  <nav id="seasons"></nav>
+</header>
+<div class="sync">
+  <span id="syncText"></span>
+  <button class="pill small" id="logout">Se déconnecter</button>
+</div>
+
+<main>
+  <section class="kpis" id="kpis"></section>
+
+  <section class="card">
+    <div class="head">
+      <div class="label">Évolution du solde</div>
+      <div class="seg" id="chartAcc">
+        <button type="button" data-a="total" class="on">Total</button><button type="button" data-a="banque">Banque</button><button type="button" data-a="caisse">Caisse</button>
+      </div>
+    </div>
+    <div class="chartWrap">
+      <svg id="chart" height="240" role="img" aria-label="Courbe du solde"></svg>
+      <div id="tip" class="tip" hidden></div>
+    </div>
+  </section>
+
+  <section class="card lockBar" id="lockBar">
+    <span id="lockText"></span>
+    <button class="pill" id="unlock">Modifier</button>
+  </section>
+
+  <form id="form" class="card form" autocomplete="off">
+    <div class="label" id="formTitle">Nouvelle opération</div>
+    <div class="row">
+      <label>Date<input type="date" name="date" required></label>
+      <div class="toggle" role="radiogroup" aria-label="Sens">
+        <button type="button" data-sign="1">Entrée</button>
+        <button type="button" data-sign="-1" class="on">Sortie</button>
+        <button type="button" data-sign="0">Transfert</button>
+      </div>
+      <label>Montant (€)<input name="amount" inputmode="decimal" placeholder="0,00" required></label>
+      <label><span id="accLabel">Compte</span><select name="account"><option value="banque">Banque</option><option value="caisse">Caisse</option></select></label>
+      <label id="catField">Catégorie<select name="category" required></select></label>
+      <span id="xferTo" class="hint" hidden></span>
+      <label class="grow">Note<input name="note" placeholder="Optionnel"></label>
+      <button class="pill primary" type="submit" id="submit">Ajouter</button>
+      <button class="pill" type="button" id="cancel" hidden>Annuler</button>
+    </div>
+  </form>
+
+  <div class="cols">
+    <section class="card">
+      <div class="head">
+        <div class="label">Opérations <span id="count"></span></div>
+        <div class="filters">
+          <input type="search" id="search" placeholder="Rechercher">
+          <select id="accFilter"><option value="">Tous comptes</option><option value="banque">Banque</option><option value="caisse">Caisse</option></select>
+          <select id="catFilter"></select>
+        </div>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Date</th><th>Catégorie</th><th class="num">Montant</th><th class="num">Solde du compte</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="head">
+        <div class="label">Catégories</div>
+        <button class="pill small" popovertarget="catMenu">Gérer</button>
+      </div>
+      <ul id="cats" class="cats"></ul>
+    </section>
+  </div>
+
+  <div class="cols cols2">
+    <section class="card">
+      <div class="head">
+        <div class="label">Sommes à percevoir <span id="recvTotal"></span></div>
+      </div>
+      <ul id="recv" class="recv"></ul>
+      <form id="recvAdd" class="row" autocomplete="off">
+        <label class="grow">Libellé<input name="label" placeholder="Ex. Subvention mairie" required></label>
+        <label>Catégorie<select name="category" required></select></label>
+        <label>Montant (€)<input name="amount" inputmode="decimal" placeholder="0,00" required size="8"></label>
+        <button class="pill">Ajouter</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="head">
+        <div class="label">Budget prévisionnel <span id="budgetSeason"></span></div>
+        <button class="pill small" id="budgetCopy"></button>
+      </div>
+      <p class="hint">Saisissez les dépenses en négatif. L'écart compare le réalisé au prévu.</p>
+      <div class="scroll short">
+        <table class="budget">
+          <thead><tr><th>Catégorie</th><th class="num">Prévu</th><th class="num">Réalisé</th><th class="num">Écart</th></tr></thead>
+          <tbody id="budget"></tbody>
+          <tfoot id="budgetTot"></tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <button class="pill primary" id="agBtn">Télécharger le document d'assemblée générale</button>
+    <button class="pill" id="exportCsv">Exporter la saison (CSV)</button>
+    <button class="pill" id="exportJson">Sauvegarder (JSON)</button>
+    <label class="pill">Restaurer une sauvegarde<input type="file" id="importJson" accept=".json" hidden></label>
+    <button class="pill" id="opening" hidden>Modifier le solde de départ</button>
+  </footer>
+</main>
+
+<div id="catMenu" popover class="menu">
+  <div class="label">Gérer les catégories</div>
+  <ul id="catEdit" class="catEdit"></ul>
+  <form id="catAdd" class="row"><input name="name" placeholder="Nouvelle catégorie" required><button class="pill">Ajouter</button></form>
+</div>
+
+<dialog id="agDialog">
+  <form method="dialog" id="agForm">
+    <div class="label">Document d'assemblée générale</div>
+    <label>Date de l'assemblée générale<input type="date" name="date" required></label>
+    <div class="row">
+      <label>Licenciés adultes<input type="number" name="adultes" min="0" required></label>
+      <label>Licenciés jeunes<input type="number" name="jeunes" min="0" required></label>
+    </div>
+    <div class="row end">
+      <button class="pill" value="cancel" formnovalidate>Annuler</button>
+      <button class="pill primary" value="ok">Générer le PDF</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="gate" class="gate">
+  <div class="card">
+    <h1>Compta <span>Bad</span></h1>
+    <p id="gateText">Chargement…</p>
+    <button class="pill primary" id="login" hidden>Se connecter avec Google</button>
+    <form id="mailForm" class="row" hidden>
+      <input type="email" name="email" placeholder="Ou votre adresse e-mail" required aria-label="Adresse e-mail">
+      <button class="pill">Recevoir un lien</button>
+    </form>
+    <label class="pill" id="gateImport" hidden>Importer une sauvegarde JSON<input type="file" accept=".json" hidden></label>
+    <button class="pill" id="gateLogout" hidden>Changer de compte</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// Configuration publique du projet Firebase : elle peut être visible, la sécurité repose sur les règles Firestore
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyC63-YSgtS4eH34bFixk6kiIWGL3LnWW08',
+  authDomain: 'compta-bcva.firebaseapp.com',
+  projectId: 'compta-bcva',
+  appId: '1:625741152231:web:22d5a71f31fb8af479c742',
+};
+</script>
+<script>
+// Calculs purs (sans DOM), partagés entre l'appli et test.js
+// Deux comptes : banque (par défaut) et caisse. Un transfert (champ `to`) déplace de l'argent sans recette ni dépense.
+
+const r2 = x => Math.round(x * 100) / 100;
+const isTransfer = t => !!t.to;
+const legs = t => isTransfer(t)
+  ? [[t.account || 'banque', -t.amount], [t.to, t.amount]]
+  : [[t.account || 'banque', t.amount]];
+
+// Soldes de départ de chaque saison par compte = soldes finaux de la précédente
+function openings(data) {
+  const res = [], o = { banque: data.seasons[0]?.opening || 0, caisse: 0 };
+  for (const s of data.seasons) {
+    if (data.cash?.season === s.name) o.caisse = r2(o.caisse + data.cash.opening);
+    res.push({ ...o, total: r2(o.banque + o.caisse) });
+    for (const t of s.tx) for (const [a, v] of legs(t)) o[a] = r2(o[a] + v);
+  }
+  return res;
+}
+
+// Opérations triées par date avec soldes courants (par compte et total)
+function withBalance(season, op) {
+  const b = { banque: op.banque, caisse: op.caisse };
+  return season.tx
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => a.t.date.localeCompare(b.t.date) || a.i - b.i)
+    .map(({ t, i }) => {
+      for (const [a, v] of legs(t)) b[a] = r2(b[a] + v);
+      return { ...t, idx: i, bal: { ...b }, balance: r2(b.banque + b.caisse) };
+    });
+}
+
+function summary(season, op) {
+  let inc = 0, out = 0;
+  const byCat = {}, acc = { banque: op.banque, caisse: op.caisse };
+  for (const t of season.tx) {
+    for (const [a, v] of legs(t)) acc[a] += v;
+    if (isTransfer(t)) continue;
+    if (t.amount >= 0) inc += t.amount; else out += t.amount;
+    byCat[t.category] = r2((byCat[t.category] || 0) + t.amount);
+  }
+  return {
+    opening: op.total, closing: r2(acc.banque + acc.caisse), acc: { banque: r2(acc.banque), caisse: r2(acc.caisse) },
+    result: r2(inc + out), inc: r2(inc), out: r2(out), byCat,
+  };
+}
+
+// Bilan d'AG : une catégorie peut apparaître en débit et en crédit (ex. Codep), dans l'ordre des catégories
+function agBreakdown(season, order) {
+  const d = {}, c = {};
+  for (const t of season.tx) {
+    if (isTransfer(t)) continue;
+    const m = t.amount < 0 ? d : c;
+    m[t.category] = (m[t.category] || 0) + Math.abs(t.amount);
+  }
+  const rank = k => (order.indexOf(k) + 1) || 1e9;
+  const list = m => Object.keys(m).sort((a, b) => rank(a) - rank(b)).map(k => [k, r2(m[k])]);
+  const sum = m => r2(Object.values(m).reduce((a, v) => a + v, 0));
+  return { debits: list(d), credits: list(c), totD: sum(d), totC: sum(c) };
+}
+
+if (typeof module !== 'undefined') module.exports = { openings, withBalance, summary, agBreakdown };
+</script>
+<script>
+const $ = s => document.querySelector(s);
+const eur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+const eur0 = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+const fmtDate = d => d.split('-').reverse().join('/');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const cls = v => v < 0 ? 'neg' : 'pos';
+const amt = v => `<span class="amt ${cls(v)}">${eur.format(v)}</span>`;
+
+// Classeur vide affiché derrière l'écran de connexion, remplacé par les données en ligne
+let data = { version: 3, categories: [], seasons: [{ name: '', opening: 0, tx: [] }], receivables: [] }, saving = Promise.resolve();
+let cur = 0, catFilter = '', accFilter = '', editing = null, collecting = null, sign = -1, unlocked = false, chart = null, chartAcc = 'total';
+const ACC = { banque: 'Banque', caisse: 'Caisse' };
+const other = a => a === 'caisse' ? 'banque' : 'caisse';
+const parseAmount = v => parseFloat(String(v).replace(/s/g, '').replace(',', '.'));
+const time = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+function checkData(d) {
+  const ok = d && Array.isArray(d.categories) && Array.isArray(d.seasons) && d.seasons.length &&
+    d.seasons.every(s => typeof s.name === 'string' && Array.isArray(s.tx) &&
+      s.tx.every(t => /^d{4}-d{2}-d{2}$/.test(t.date) && isFinite(t.amount) && typeof t.category === 'string' &&
+        [undefined, 'banque', 'caisse'].includes(t.account) && [undefined, 'banque', 'caisse'].includes(t.to)));
+  if (!ok) throw new Error('fichier non reconnu');
+  d.receivables ||= [];
+  return d;
+}
+
+// Remplace les données affichées (données en ligne ou restauration)
+function adopt(d) {
+  const first = !data.seasons[0].name;
+  data = d;
+  cur = first ? data.seasons.length - 1 : Math.min(cur, data.seasons.length - 1);
+  catFilter = ''; unlocked = false;
+}
+
+function setSync(text, error) {
+  $('#syncText').textContent = text;
+  $('#syncText').classList.toggle('err', !!error);
+}
+
+/* ---------- Données en ligne (Firebase) ----------
+   Tout le classeur est un seul document Firestore (texte JSON) avec un compteur rev.
+   Chaque enregistrement vérifie dans une transaction que personne n'a enregistré entre-temps. */
+// shortcut: un document Firestore est limité à 1 Mo (environ 50 saisons au rythme actuel), découper par saison si on s'en approche
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth(), docRef = firebase.firestore().doc('compta/donnees');
+let rev = 0, remote = null, unsub = null;
+const busy = () => editing !== null || collecting !== null || !!$('#form').amount.value;
+
+function gate(text, opts = {}) {
+  $('#gate').hidden = !text;
+  $('#gateText').textContent = text || '';
+  $('#login').hidden = !opts.login;
+  $('#mailForm').hidden = !opts.login;
+  $('#gateLogout').hidden = !opts.logout;
+  $('#gateImport').hidden = !opts.importer;
+}
+
+// Applique la dernière version reçue du serveur (sauf si c'est déjà la nôtre)
+function applyRemote(force) {
+  if (!remote || (remote.rev === rev && !force)) return;
+  adopt(checkData(JSON.parse(remote.json)));
+  rev = remote.rev; remote = null;
+  resetForm(); render(); gate();
+  setSync(`Connecté : ${auth.currentUser.email} · à jour à ${time()}`);
+}
+
+function save() {
+  setSync('Enregistrement…');
+  saving = saving.then(async () => {
+    const base = rev, json = JSON.stringify(data);
+    const ok = await firebase.firestore().runTransaction(async tx => {
+      const snap = await tx.get(docRef);
+      if ((snap.exists ? snap.data().rev : 0) !== base) return false;
+      tx.set(docRef, { json, rev: base + 1, par: auth.currentUser.email, le: firebase.firestore.FieldValue.serverTimestamp() });
+      return true;
+    });
+    if (ok) { rev = base + 1; return setSync(`Connecté : ${auth.currentUser.email} · enregistré à ${time()}`); }
+    remote = (await docRef.get()).data();
+    applyRemote(true);
+    alert("Un autre membre du bureau vient d'enregistrer. Ses modifications ont été chargées, mais votre dernière saisie n'a pas été enregistrée : refaites-la.");
+  }).catch(err => setSync("Erreur d'enregistrement : " + err.message + '. Rechargez la page.', true));
+}
+
+auth.onAuthStateChanged(user => {
+  if (unsub) unsub();
+  if (!user) return gate('Connectez-vous avec le compte Google autorisé par le bureau.', { login: true });
+  gate('Chargement…');
+  unsub = docRef.onSnapshot(s => {
+    if (!s.exists) return gate("Aucune donnée en ligne pour l'instant. Importez votre sauvegarde JSON pour démarrer.", { importer: true, logout: true });
+    remote = s.data();
+    // une saisie en cours n'est pas interrompue ; la transaction détectera l'écart à l'enregistrement
+    if (!$('#gate').hidden || !busy()) applyRemote();
+  }, err => gate(err.code === 'permission-denied'
+    ? `Le compte ${user.email} n'a pas accès à la comptabilité du club.`
+    : 'Erreur de connexion : ' + err.message, { logout: true }));
+});
+
+$('#login').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+  .catch(e => { if (e.code !== 'auth/popup-closed-by-user') alert('Connexion impossible : ' + e.message); });
+$('#logout').onclick = $('#gateLogout').onclick = () => auth.signOut();
+
+// Connexion par lien e-mail, pour les adresses qui ne sont pas des comptes Google (ex. live.com)
+$('#mailForm').onsubmit = async e => {
+  e.preventDefault();
+  const email = e.target.email.value.trim();
+  try {
+    await auth.sendSignInLinkToEmail(email, { url: location.origin + location.pathname, handleCodeInApp: true });
+    localStorage.setItem('emailConnexion', email);
+    gate(`Un lien de connexion a été envoyé à ${email}. Ouvrez-le sur cet ordinateur (pensez à regarder dans les indésirables).`);
+  } catch (err) { alert('Envoi impossible : ' + err.message); }
+};
+if (auth.isSignInWithEmailLink(location.href)) {
+  const email = localStorage.getItem('emailConnexion') || prompt('Confirmez votre adresse e-mail');
+  auth.signInWithEmailLink(email, location.href)
+    .then(() => { localStorage.removeItem('emailConnexion'); history.replaceState(null, '', location.pathname); })
+    .catch(err => alert('Lien invalide ou expiré : ' + err.message));
+}
+$('#gateImport input').onchange = e => $('#importJson').onchange(e);
+
+const lastDate = s => s.tx.reduce((m, t) => t.date > m ? t.date : m, '');
+const isLast = () => cur === data.seasons.length - 1;
+const locked = () => !isLast() && !unlocked;
+
+function render() {
+  const season = data.seasons[cur];
+  const op = openings(data)[cur];
+  const sm = summary(season, op);
+  const rows = withBalance(season, op);
+  const startDate = cur ? lastDate(data.seasons[cur - 1]) : data.seasons[0].openingDate;
+  const endDate = lastDate(season);
+  const hasCash = op.caisse || sm.acc.caisse || season.tx.some(t => t.account === 'caisse' || t.to === 'caisse');
+  const split = a => hasCash ? `<div class="sub">Banque ${eur.format(a.banque)}<br>Caisse ${eur.format(a.caisse)}</div>` : '';
+
+  $('#seasons').innerHTML = data.seasons.map((s, i) =>
+    `<button class="pill ${i === cur ? 'on' : ''}" data-i="${i}">${esc(s.name)}</button>`).join('') +
+    '<button class="pill" id="newSeason">+ Saison</button>';
+
+  $('#kpis').innerHTML = [
+    [startDate ? `Solde au ${fmtDate(startDate)}` : 'Solde de départ', eur.format(sm.opening) + split(op)],
+    [isLast() || !endDate ? 'Solde actuel' : `Solde au ${fmtDate(endDate)}`, eur.format(sm.closing) + split(sm.acc)],
+    ['Résultat de la saison', amt(sm.result)],
+    ['Entrées', amt(sm.inc)],
+    ['Sorties', amt(sm.out)],
+  ].map(([l, v]) => `<div class="card kpi"><div class="label">${l}</div><div class="v">${v}</div></div>`).join('');
+
+  $('#chartAcc').hidden = !hasCash;
+  if (!hasCash) chartAcc = 'total';
+  document.querySelectorAll('#chartAcc button').forEach(b => b.classList.toggle('on', b.dataset.a === chartAcc));
+  drawChart(rows, op);
+
+  $('#lockBar').hidden = isLast();
+  $('#lockText').textContent = unlocked ? 'Modification de la saison clôturée en cours.' : 'Saison clôturée : les opérations sont en lecture seule.';
+  $('#unlock').textContent = unlocked ? 'Terminer les modifications' : 'Modifier';
+  $('#form').hidden = locked();
+  document.body.classList.toggle('locked', locked());
+
+  const q = $('#search').value.trim().toLowerCase();
+  const acc = r => r.account || 'banque';
+  const shown = rows.filter(r => (!catFilter || r.category === catFilter) &&
+    (!accFilter || acc(r) === accFilter || r.to === accFilter) &&
+    (!q || (r.category + ' ' + r.note + ' ' + fmtDate(r.date) + ' ' + r.amount).toLowerCase().includes(q))).reverse();
+  $('#count').textContent = `(${shown.length})`;
+  $('#rows').innerHTML = shown.map(r => `<tr data-i="${r.idx}">
+    <td>${fmtDate(r.date)}</td>
+    <td>${r.to ? `Transfert ${ACC[acc(r)].toLowerCase()} → ${ACC[r.to].toLowerCase()}` : esc(r.category)}${acc(r) === 'caisse' && !r.to ? '<span class="tag">Caisse</span>' : ''}${r.note ? `<span class="note">${esc(r.note)}</span>` : ''}</td>
+    <td class="num">${r.to ? eur.format(r.amount) : amt(r.amount)}</td>
+    <td class="num">${eur.format(r.bal[r.to || acc(r)])}</td>
+    <td>${locked() ? '' : `<button class="del" data-del="${r.idx}" title="Supprimer" aria-label="Supprimer">×</button>`}</td></tr>`).join('');
+
+  // Résumé dans l'ordre choisi des catégories
+  const rank = c => (data.categories.indexOf(c) + 1) || 1e9;
+  const cats = Object.entries(sm.byCat).sort((a, b) => rank(a[0]) - rank(b[0]));
+  $('#cats').innerHTML = cats.map(([c, v]) =>
+    `<li data-c="${esc(c)}" class="${c === catFilter ? 'sel' : ''}"><span>${esc(c)}</span>${amt(Math.round(v * 100) / 100)}</li>`).join('');
+
+  const opts = data.categories.map(c => `<option>${esc(c)}</option>`).join('');
+  const sel = $('#form').category.value;
+  $('#form').category.innerHTML = opts;
+  if (sel) $('#form').category.value = sel;
+  $('#catFilter').innerHTML = '<option value="">Toutes catégories</option>' + opts;
+  $('#catFilter').value = catFilter;
+  $('#accFilter').value = accFilter;
+  const rsel = $('#recvAdd').category.value;
+  $('#recvAdd').category.innerHTML = opts;
+  $('#recvAdd').category.value = rsel || 'Subvention';
+
+  renderReceivables();
+  renderBudget(sm);
+
+  const n = data.categories.length;
+  $('#catEdit').innerHTML = data.categories.map((c, i) => `<li><span>${esc(c)}</span>
+    <button data-mv="${i}" data-d="-1" title="Monter" ${i ? '' : 'disabled'}>↑</button>
+    <button data-mv="${i}" data-d="1" title="Descendre" ${i < n - 1 ? '' : 'disabled'}>↓</button>
+    <button data-ren="${i}" title="Renommer">✎</button>
+    <button data-rm="${i}" title="Supprimer">×</button></li>`).join('');
+  $('#opening').hidden = cur !== 0;
+}
+
+// Valeur « ronde » pour les graduations : 1, 2 ou 5 × 10^n
+function niceStep(range, n) {
+  const raw = range / n, p = 10 ** Math.floor(Math.log10(raw));
+  return [1, 2, 5, 10].map(m => m * p).find(s => s >= raw);
+}
+
+function drawChart(rows, op) {
+  const svg = $('#chart');
+  $('#tip').hidden = true;
+  if (!rows.length) { svg.innerHTML = ''; chart = null; return; }
+  const val = b => chartAcc === 'total' ? r2(b.banque + b.caisse) : b[chartAcc];
+  const pts = [{ date: rows[0].date, balance: val(op) }, ...rows.map(r => ({ date: r.date, balance: val(r.bal) }))];
+  // saison en cours : la courbe va jusqu'à aujourd'hui
+  if (isLast() && today() > rows.at(-1).date) pts.push({ date: today(), balance: pts.at(-1).balance });
+
+  const W = svg.clientWidth || 800, H = 240, L = 78, R = 12, T = 10, B = 26;
+  const t = d => new Date(d + 'T00:00').getTime();
+  const x0 = t(pts[0].date), x1 = Math.max(t(pts.at(-1).date), x0 + 864e5);
+  const vals = pts.map(p => p.balance);
+  const step = niceStep(Math.max(Math.max(...vals) - Math.min(...vals), 100), 4);
+  const lo = Math.floor(Math.min(...vals) / step) * step, hi = Math.ceil(Math.max(...vals) / step) * step || lo + step;
+  const X = d => L + (t(d) - x0) / (x1 - x0) * (W - L - R);
+  const Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+
+  let g = '';
+  for (let v = lo; v <= hi + 1e-6; v += step)
+    g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="grid"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${eur0.format(v)}</text>`;
+  const months = [], d0 = new Date(x0);
+  for (let m = new Date(d0.getFullYear(), d0.getMonth() + 1, 1); m.getTime() <= x1; m.setMonth(m.getMonth() + 1)) months.push(new Date(m));
+  const every = Math.ceil(months.length / Math.max(1, Math.floor((W - L) / 70)));
+  const mf = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: '2-digit' });
+  months.forEach((m, i) => {
+    const x = L + (m.getTime() - x0) / (x1 - x0) * (W - L - R);
+    g += `<line x1="${x}" x2="${x}" y1="${H - B}" y2="${H - B + 4}" class="axis"/>` +
+      (i % every ? '' : `<text x="${x}" y="${H - 8}" text-anchor="middle">${mf.format(m)}</text>`);
+  });
+
+  // marche d'escalier : le solde reste constant jusqu'à l'opération suivante
+  let d = `M${L} ${Y(pts[0].balance)}`;
+  for (const p of pts.slice(1)) d += ` H${X(p.date)} V${Y(p.balance)}`;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = g +
+    `<path d="${d} V${H - B} H${L} Z" class="area"/><path d="${d}" class="line"/>` +
+    `<line x1="${L}" x2="${L}" y1="${T}" y2="${H - B}" class="axis"/><line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" class="axis"/>` +
+    `<line id="cursor" y1="${T}" y2="${H - B}" class="cursor" visibility="hidden"/><circle id="dot" r="4" class="dot" visibility="hidden"/>`;
+  chart = { pts, t, x0, x1, X, Y, L, R, W };
+}
+
+$('#chart').addEventListener('mousemove', e => {
+  if (!chart) return;
+  const { pts, t, x0, x1, X, Y, L, R, W } = chart;
+  const px = Math.min(Math.max(e.offsetX, L), W - R);
+  const at = x0 + (px - L) / (W - L - R) * (x1 - x0);
+  let p = pts[0];
+  for (const q of pts) { if (t(q.date) <= at) p = q; else break; }
+  const date = new Date(at).toISOString().slice(0, 10);
+  const cx = $('#cursor'), dot = $('#dot'), tip = $('#tip');
+  cx.setAttribute('x1', px); cx.setAttribute('x2', px); cx.setAttribute('visibility', 'visible');
+  dot.setAttribute('cx', px); dot.setAttribute('cy', Y(p.balance)); dot.setAttribute('visibility', 'visible');
+  tip.hidden = false;
+  tip.innerHTML = `<span>${fmtDate(date)}</span><b>${eur.format(p.balance)}</b>`;
+  tip.style.left = Math.min(px + 12, W - tip.offsetWidth) + 'px';
+  tip.style.top = Math.max(Y(p.balance) - 44, 0) + 'px';
+});
+$('#chart').addEventListener('mouseleave', () => {
+  $('#tip').hidden = true;
+  $('#cursor')?.setAttribute('visibility', 'hidden');
+  $('#dot')?.setAttribute('visibility', 'hidden');
+});
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); });
+
+// sign : 1 entrée, -1 sortie, 0 transfert entre banque et caisse
+function setSign(s) {
+  sign = s;
+  document.querySelectorAll('.toggle button').forEach(b => b.classList.toggle('on', +b.dataset.sign === s));
+  $('#catField').hidden = s === 0;
+  $('#form').category.required = s !== 0;
+  $('#accLabel').textContent = s === 0 ? 'Depuis' : 'Compte';
+  updateXfer();
+}
+function updateXfer() {
+  $('#xferTo').hidden = sign !== 0;
+  $('#xferTo').textContent = `vers ${ACC[other($('#form').account.value)].toLowerCase()}`;
+}
+$('#form').account.addEventListener('change', updateXfer);
+
+function resetForm() {
+  editing = null; collecting = null;
+  const f = $('#form');
+  f.amount.value = ''; f.note.value = '';
+  f.date.value = lastDate(data.seasons[cur]) || today();
+  $('#submit').textContent = 'Ajouter';
+  $('#formTitle').textContent = 'Nouvelle opération';
+  $('#cancel').hidden = true;
+  f.classList.remove('editing');
+}
+
+function startEdit(i) {
+  const t = data.seasons[cur].tx[i], f = $('#form');
+  editing = i; collecting = null;
+  f.date.value = t.date; f.amount.value = String(Math.abs(t.amount)).replace('.', ',');
+  if (!t.to) f.category.value = t.category;
+  f.note.value = t.note || '';
+  f.account.value = t.account || 'banque';
+  setSign(t.to ? 0 : t.amount < 0 ? -1 : 1);
+  $('#submit').textContent = 'Enregistrer';
+  $('#formTitle').textContent = 'Modifier l\'opération';
+  $('#cancel').hidden = false;
+  f.classList.add('editing');
+  f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  f.amount.focus();
+}
+
+$('#form').addEventListener('submit', e => {
+  e.preventDefault();
+  if (locked()) return;
+  const f = e.target;
+  const n = parseAmount(f.amount.value);
+  if (!isFinite(n) || n <= 0) { alert('Montant invalide'); f.amount.focus(); return; }
+  const a = f.account.value, note = f.note.value.trim();
+  const t = sign === 0
+    ? { date: f.date.value, amount: r2(n), category: 'Transfert', account: a, to: other(a), note }
+    : { date: f.date.value, amount: r2(sign * n), category: f.category.value, note, ...(a === 'caisse' && { account: a }) };
+  if (editing !== null) data.seasons[cur].tx[editing] = t;
+  else data.seasons[cur].tx.push(t);
+  if (collecting) data.receivables = data.receivables.filter(r => r.id !== collecting);
+  save(); resetForm(); render();
+  f.amount.focus();
+});
+
+$('#cancel').onclick = () => { resetForm(); render(); applyRemote(); };
+document.querySelectorAll('.toggle button').forEach(b => b.onclick = () => setSign(+b.dataset.sign));
+$('#unlock').onclick = () => { unlocked = !unlocked; resetForm(); render(); };
+
+// Le sens et le compte suivent l'historique de la catégorie (Licence → entrée, Ligue → sortie…)
+$('#form').category.addEventListener('change', e => {
+  const same = data.seasons.flatMap(s => s.tx).filter(t => t.category === e.target.value);
+  const total = same.reduce((a, t) => a + t.amount, 0);
+  if (total) setSign(total > 0 ? 1 : -1);
+  if (same.length) $('#form').account.value = same.at(-1).account || 'banque';
+});
+
+$('#chartAcc').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b) { chartAcc = b.dataset.a; render(); }
+});
+$('#accFilter').onchange = e => { accFilter = e.target.value; render(); };
+
+// Sommes à percevoir : communes à toutes les saisons, encaissées dans la saison en cours
+function renderReceivables() {
+  const list = data.receivables;
+  const total = r2(list.reduce((a, r) => a + r.amount, 0));
+  $('#recvTotal').innerHTML = list.length ? `· ${eur.format(total)}` : '';
+  $('#recv').innerHTML = list.length ? list.map(r => `<li>
+      <div>${esc(r.label)}<span class="note">${esc(r.category)} · ajouté le ${fmtDate(r.date)}</span></div>
+      ${amt(r.amount)}
+      <button class="pill small" data-get="${r.id}">Encaisser</button>
+      <button class="del" data-rrm="${r.id}" title="Supprimer" aria-label="Supprimer">×</button></li>`).join('')
+    : '<li class="empty">Rien en attente.</li>';
+}
+
+$('#recvAdd').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target, n = parseAmount(f.amount.value);
+  if (!isFinite(n) || n <= 0) return alert('Montant invalide');
+  data.receivables.push({ id: Date.now().toString(36), label: f.label.value.trim(), category: f.category.value, amount: r2(n), date: today() });
+  f.label.value = ''; f.amount.value = '';
+  save(); render();
+});
+
+$('#recv').addEventListener('click', e => {
+  const get = e.target.closest('[data-get]'), rm = e.target.closest('[data-rrm]');
+  if (rm) {
+    const r = data.receivables.find(x => x.id === rm.dataset.rrm);
+    if (!confirm(`Retirer « ${r.label} » des sommes à percevoir ?`)) return;
+    data.receivables = data.receivables.filter(x => x !== r);
+    save(); render();
+  }
+  if (get) {
+    const r = data.receivables.find(x => x.id === get.dataset.get), f = $('#form');
+    cur = data.seasons.length - 1; unlocked = false; catFilter = '';
+    resetForm(); render();
+    collecting = r.id;
+    f.date.value = today(); f.amount.value = String(r.amount).replace('.', ',');
+    f.category.value = r.category; f.note.value = r.label; f.account.value = 'banque';
+    setSign(1);
+    $('#formTitle').textContent = `Encaisser : ${r.label}`;
+    $('#cancel').hidden = false;
+    f.classList.add('editing');
+    f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    f.amount.focus();
+  }
+});
+
+// Budget prévisionnel de la saison affichée, comparé au réalisé par catégorie
+function renderBudget(sm) {
+  const s = data.seasons[cur], b = s.budget || {};
+  const prev = data.seasons[cur - 1];
+  $('#budgetSeason').textContent = s.name;
+  $('#budgetCopy').hidden = !prev;
+  if (prev) $('#budgetCopy').textContent = `Reprendre le réalisé ${prev.name}`;
+  const cats = [...data.categories, ...Object.keys(sm.byCat).filter(c => !data.categories.includes(c))];
+  let tp = 0, tr = 0;
+  $('#budget').innerHTML = cats.map(c => {
+    const p = b[c], r = sm.byCat[c] || 0;
+    tp += p || 0; tr += r;
+    const gap = p == null ? '' : amt(r2(r - p));
+    return `<tr class="${p == null && !r ? 'idle' : ''}"><td>${esc(c)}</td>
+      <td class="num"><input data-b="${esc(c)}" inputmode="decimal" value="${p == null ? '' : String(p).replace('.', ',')}" placeholder="—"></td>
+      <td class="num">${r ? amt(r) : ''}</td><td class="num">${gap}</td></tr>`;
+  }).join('');
+  $('#budgetTot').innerHTML = `<tr><td>Total</td><td class="num">${amt(r2(tp))}</td><td class="num">${amt(r2(tr))}</td><td class="num">${amt(r2(tr - tp))}</td></tr>`;
+}
+
+$('#budget').addEventListener('change', e => {
+  const c = e.target.dataset.b;
+  if (!c) return;
+  const s = data.seasons[cur], v = e.target.value.trim();
+  s.budget ||= {};
+  if (!v) delete s.budget[c];
+  else {
+    const n = parseAmount(v);
+    if (!isFinite(n)) { alert('Montant invalide'); return render(); }
+    s.budget[c] = r2(n);
+  }
+  save(); render();
+});
+
+$('#budgetCopy').onclick = () => {
+  const s = data.seasons[cur], prev = data.seasons[cur - 1];
+  if (s.budget && Object.keys(s.budget).length && !confirm('Remplacer le budget prévu par le réalisé de la saison précédente ?')) return;
+  s.budget = { ...summary(prev, openings(data)[cur - 1]).byCat };
+  save(); render();
+};
+
+$('#seasons').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.id === 'newSeason') {
+    const last = data.seasons.at(-1).name, m = last.match(/^(\d{4})-(\d{4})$/);
+    const name = prompt('Nom de la nouvelle saison', m ? `${+m[1] + 1}-${+m[2] + 1}` : '');
+    if (!name) return;
+    data.seasons.push({ name: name.trim(), tx: [] });
+    cur = data.seasons.length - 1;
+    save();
+  } else cur = +b.dataset.i;
+  catFilter = ''; unlocked = false; resetForm(); render();
+});
+
+$('#rows').addEventListener('click', e => {
+  if (locked()) return;
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    const t = data.seasons[cur].tx[+del.dataset.del];
+    if (confirm(`Supprimer l'opération du ${fmtDate(t.date)} (${t.category}, ${eur.format(t.amount)}) ?`)) {
+      data.seasons[cur].tx.splice(+del.dataset.del, 1);
+      save(); resetForm(); render();
+    }
+    return;
+  }
+  const tr = e.target.closest('tr');
+  if (tr) startEdit(+tr.dataset.i);
+});
+
+$('#cats').addEventListener('click', e => {
+  const li = e.target.closest('li');
+  if (li) { catFilter = catFilter === li.dataset.c ? '' : li.dataset.c; render(); }
+});
+$('#catFilter').onchange = e => { catFilter = e.target.value; render(); };
+$('#search').oninput = render;
+
+$('#catEdit').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const all = data.seasons.flatMap(s => s.tx), c = data.categories;
+  if (b.dataset.mv) {
+    const i = +b.dataset.mv, j = i + +b.dataset.d;
+    [c[i], c[j]] = [c[j], c[i]];
+  } else if (b.dataset.ren) {
+    const old = c[+b.dataset.ren];
+    const name = prompt('Nouveau nom', old)?.trim();
+    if (!name || name === old) return;
+    if (c.includes(name)) return alert('Cette catégorie existe déjà');
+    c[+b.dataset.ren] = name;
+    all.forEach(t => { if (t.category === old) t.category = name; });
+    data.receivables.forEach(r => { if (r.category === old) r.category = name; });
+    data.seasons.forEach(s => { if (s.budget && old in s.budget) { s.budget[name] = s.budget[old]; delete s.budget[old]; } });
+    if (catFilter === old) catFilter = name;
+  } else {
+    const name = c[+b.dataset.rm], used = all.filter(t => t.category === name).length;
+    if (used) return alert(`« ${name} » est utilisée par ${used} opération(s) : renommez-la plutôt.`);
+    if (!confirm(`Supprimer la catégorie « ${name} » ?`)) return;
+    c.splice(+b.dataset.rm, 1);
+  }
+  save(); render();
+});
+
+$('#catAdd').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = e.target.name.value.trim();
+  if (data.categories.includes(name)) return alert('Cette catégorie existe déjà');
+  data.categories.push(name);
+  e.target.reset(); save(); render();
+});
+
+$('#opening').onclick = () => {
+  const v = prompt('Solde du compte au début de la première saison (€)', String(data.seasons[0].opening).replace('.', ','));
+  if (v === null) return;
+  const n = parseAmount(v);
+  if (!isFinite(n)) return alert('Montant invalide');
+  data.seasons[0].opening = n; save(); render();
+};
+
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+$('#exportCsv').onclick = () => {
+  const s = data.seasons[cur], rows = withBalance(s, openings(data)[cur]);
+  const num = v => v.toFixed(2).replace('.', ',');
+  const q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const a = r => r.account || 'banque';
+  const lines = ['Date;Compte;Montant;Solde du compte;Catégorie;Note', ...rows.map(r => [fmtDate(r.date),
+    r.to ? `${ACC[a(r)]} → ${ACC[r.to]}` : ACC[a(r)], num(r.amount), num(r.bal[r.to || a(r)]), q(r.category), q(r.note || '')].join(';'))];
+  download(`Compta Bad ${s.name}.csv`, '﻿' + lines.join('\r\n'), 'text/csv');
+};
+
+$('#exportJson').onclick = () => download(`compta-bad-${today()}.json`, JSON.stringify(data, null, 1), 'application/json');
+
+$('#importJson').onchange = async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const d = checkData(JSON.parse(await file.text()));
+    if (!confirm(`Remplacer toutes les données actuelles par « ${file.name} » ?`)) return;
+    adopt(d); cur = data.seasons.length - 1; gate();
+    save(); resetForm(); render();
+  } catch (err) { alert('Restauration impossible : ' + err.message); }
+};
+
+// Document d'AG : mis en page comme le bilan 2024-2025, puis « Enregistrer au format PDF » dans la boîte d'impression
+$('#agBtn').onclick = () => {
+  const f = $('#agForm'), ag = data.seasons[cur].ag || {};
+  f.date.value = ag.date || today(); f.adultes.value = ag.adultes ?? ''; f.jeunes.value = ag.jeunes ?? '';
+  $('#agDialog').showModal();
+};
+
+$('#agDialog').addEventListener('close', () => {
+  if ($('#agDialog').returnValue !== 'ok') return;
+  const f = $('#agForm'), s = data.seasons[cur];
+  s.ag = { date: f.date.value, adultes: +f.adultes.value, jeunes: +f.jeunes.value };
+  save();
+  printAG(s);
+});
+
+function printAG(s) {
+  const b = agBreakdown(s, data.categories), n = Math.max(b.debits.length, b.credits.length);
+  const cell = ([k, v] = []) => k ? `<td>${esc(k)}</td><td class="n">${eur.format(v)}</td>` : '<td></td><td></td>';
+  const lines = Array.from({ length: n }, (_, i) => `<tr>${cell(b.debits[i])}${cell(b.credits[i])}</tr>`).join('');
+  const title = `Bilan Financier AG Bad ${s.name}`;
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+    @page { size: A4 landscape; margin: 15mm; }
+    body { font: 11pt Arial, Helvetica, sans-serif; color: #000; margin: 0; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #000; padding: 3px 6px; }
+    .main > tbody > tr > td:nth-child(2) { border-right: 2px solid #000; }
+    .head td { text-align: center; line-height: 1.5; border: 2px solid #000; }
+    th { font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+    .main { border: 2px solid #000; }
+    .n { text-align: right; white-space: nowrap; width: 18%; }
+    .tot { margin-top: 18px; border: 2px solid #000; }
+    .tot td { font-weight: bold; }
+    .final { width: 34%; margin: 18px auto 0; border: 2px solid #000; font-weight: bold; }
+  </style></head><body>
+    <table class="head"><tr><td>Bilan Financier BCVA<br>Saison ${esc(s.name)}<br>Assemblée Générale ${fmtDate(s.ag.date)}<br>
+      ${s.ag.adultes + s.ag.jeunes} licenciés dont ${s.ag.adultes} adultes &amp; ${s.ag.jeunes} jeunes</td></tr></table>
+    <table class="main"><tr><th colspan="2">Débits</th><th colspan="2">Crédits</th></tr>${lines}</table>
+    <table class="tot"><tr><td>Total Débits</td><td class="n">${eur.format(-b.totD)}</td><td>Total Crédits</td><td class="n">${eur.format(b.totC)}</td></tr></table>
+    <table class="final"><tr><td>Total</td><td class="n">${eur.format(Math.round((b.totC - b.totD) * 100) / 100)}</td></tr></table>
+  </body></html>`;
+  const frame = document.createElement('iframe');
+  frame.style.cssText = 'position:fixed;width:0;height:0;border:0';
+  document.body.append(frame);
+  frame.contentDocument.open(); frame.contentDocument.write(html); frame.contentDocument.close();
+  const old = document.title;
+  document.title = title; // nom proposé pour le fichier PDF
+  frame.contentWindow.focus();
+  frame.contentWindow.print();
+  document.title = old;
+  setTimeout(() => frame.remove(), 1000);
+}
+
+resetForm();
+render();
+</script>
+</body>
+</html>
