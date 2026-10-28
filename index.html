@@ -468,7 +468,7 @@ function save() {
 
 auth.onAuthStateChanged(user => {
   if (unsub) unsub();
-  if (!user) return gate('Connectez-vous avec le compte Google autorisé par le bureau.', { login: true });
+  if (!user) return gate('Connectez-vous avec une adresse autorisée par le bureau.', { login: true });
   gate('Chargement…');
   unsub = docRef.onSnapshot(s => {
     if (!s.exists) return gate("Aucune donnée en ligne pour l'instant. Importez votre sauvegarde JSON pour démarrer.", { importer: true, logout: true });
