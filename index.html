@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Compta Bad</title>
+<title>Compta BCVA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap" rel="stylesheet">
@@ -155,7 +155,7 @@ dialog .row > label { flex: 1; }
 </head>
 <body>
 <header>
-  <h1>Compta <span>Bad</span></h1>
+  <h1>Compta <span>BCVA</span></h1>
   <nav id="seasons"></nav>
 </header>
 <div class="sync">
@@ -292,7 +292,7 @@ dialog .row > label { flex: 1; }
 
 <div id="gate" class="gate">
   <div class="card">
-    <h1>Compta <span>Bad</span></h1>
+    <h1>Compta <span>BCVA</span></h1>
     <p id="gateText">Chargement…</p>
     <button class="pill primary" id="login" hidden>Se connecter avec Google</button>
     <label class="pill" id="gateImport" hidden>Importer une sauvegarde JSON<input type="file" accept=".json" hidden></label>
@@ -463,7 +463,7 @@ function save() {
 auth.onAuthStateChanged(user => {
   if (unsub) unsub();
   // ouvert en double-clic (file://) : Google refuse la connexion, on renvoie vers le site
-  if (location.protocol === 'file:') return gate('Cette copie locale ne permet pas de se connecter. Ouvrez le site : https://nicolaswendling00-dot.github.io/compta-bad/');
+  if (location.protocol === 'file:') return gate('Cette copie locale ne permet pas de se connecter. Ouvrez le site : https://nicolaswendling00-dot.github.io/compta-bcva/');
   if (!user) return gate('Connectez-vous avec le compte Google autorisé par le bureau.', { login: true });
   gate('Chargement…');
   unsub = docRef.onSnapshot(s => {
@@ -894,10 +894,10 @@ $('#exportCsv').onclick = () => {
   const a = r => r.account || 'banque';
   const lines = ['Date;Compte;Montant;Solde du compte;Catégorie;Note', ...rows.map(r => [fmtDate(r.date),
     r.to ? `${ACC[a(r)]} → ${ACC[r.to]}` : ACC[a(r)], num(r.amount), num(r.bal[r.to || a(r)]), q(r.category), q(r.note || '')].join(';'))];
-  download(`Compta Bad ${s.name}.csv`, '﻿' + lines.join('\r\n'), 'text/csv');
+  download(`Compta BCVA ${s.name}.csv`, '﻿' + lines.join('\r\n'), 'text/csv');
 };
 
-$('#exportJson').onclick = () => download(`compta-bad-${today()}.json`, JSON.stringify(data, null, 1), 'application/json');
+$('#exportJson').onclick = () => download(`compta-bcva-${today()}.json`, JSON.stringify(data, null, 1), 'application/json');
 
 $('#importJson').onchange = async e => {
   const file = e.target.files[0];
@@ -930,7 +930,7 @@ function printAG(s) {
   const b = agBreakdown(s, data.categories), n = Math.max(b.debits.length, b.credits.length);
   const cell = ([k, v] = []) => k ? `<td>${esc(k)}</td><td class="n">${eur.format(v)}</td>` : '<td></td><td></td>';
   const lines = Array.from({ length: n }, (_, i) => `<tr>${cell(b.debits[i])}${cell(b.credits[i])}</tr>`).join('');
-  const title = `Bilan Financier AG Bad ${s.name}`;
+  const title = `Bilan Financier AG BCVA ${s.name}`;
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
     @page { size: A4 landscape; margin: 15mm; }
     body { font: 11pt Arial, Helvetica, sans-serif; color: #000; margin: 0; }
