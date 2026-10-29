@@ -18,8 +18,7 @@
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--font); }
 main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 16px; }
 
-header { background: var(--card); border-bottom: 1px solid var(--line); }
-header { padding: 14px max(16px, calc((100% - 1200px) / 2 + 16px)); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+header { max-width: 1200px; margin: 0 auto; padding: 20px 16px 0; }
 h1 { margin: 0; font-size: 18px; font-weight: 700; }
 h1 span { color: var(--mute); font-weight: 500; }
 nav { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -79,7 +78,6 @@ tbody tr:hover { background: #f7f9fb; }
 .cats li:hover { color: var(--accent); }
 .cats li.sel { color: var(--accent); font-weight: 600; }
 
-footer { display: flex; flex-wrap: wrap; gap: 8px; }
 [hidden] { display: none !important; }
 
 /* Graphique */
@@ -141,10 +139,6 @@ dialog .row > label { flex: 1; }
 .budget tfoot td { font-weight: 600; border-top: 2px solid var(--line); }
 .kpi .sub { font-size: 12px; color: var(--mute); margin-top: 2px; }
 
-/* Fichier partagé */
-.sync { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px max(16px, calc((100% - 1200px) / 2 + 16px)); background: #fafbfc; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--mute); }
-.sync #syncText { flex: 1; }
-.sync #syncText.err { color: #9a6700; }
 
 /* Écran de connexion */
 .gate { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: grid; place-items: center; padding: 16px; }
@@ -155,17 +149,64 @@ dialog .row > label { flex: 1; }
 #form input[name=amount] { width: 100px; }
 #form select[name=category] { max-width: 200px; }
 #form label.grow { min-width: 120px; }
+
+/* Menu latéral */
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+.side { position: sticky; top: 0; height: 100vh; overflow: auto; background: var(--card); border-right: 1px solid var(--line); padding: 20px 12px; }
+.side h1 { padding: 0 10px 12px; }
+.sideNav { display: grid; gap: 2px; }
+.sideNav .grp { margin: 16px 10px 4px; font-size: 12px; font-weight: 600; color: var(--mute); }
+.sideNav a, .sideNav button, .sideBtn { display: block; width: 100%; text-align: left; font: 500 14px var(--font); color: var(--text); text-decoration: none; background: none; border: 0; border-radius: 4px; padding: 7px 10px; cursor: pointer; }
+.sideNav a:hover, .sideNav button:hover, .sideBtn:hover { background: #f0f2f5; }
+.account { margin: 8px 0 0; padding: 10px; background: #fafbfc; border-radius: 4px; display: grid; gap: 6px; font-size: 12px; color: var(--mute); overflow-wrap: anywhere; }
+.account #syncText.err { color: #9a6700; }
+.account button { padding: 0; color: var(--accent); width: auto; }
+.account button:hover { background: none; text-decoration: underline; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .sideNav { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .sideNav .grp, .account { grid-column: 1 / -1; }
+}
+.gateTitle { margin: 0; font-size: 18px; font-weight: 700; color: var(--text); } .gateTitle span { color: var(--mute); font-weight: 500; }
+/* resserre le formulaire pour qu'il tienne sur une ligne à côté du menu */
+#form .row { gap: 8px; }
+#form .toggle button { padding: 7px 10px; }
+#form select[name=category] { max-width: 170px; }
+.account #syncText { white-space: pre-line; }
 </style>
 </head>
 <body>
-<header>
+<div class="layout">
+<aside class="side">
   <h1>Compta <span>BCVA</span></h1>
-  <nav id="seasons"></nav>
+  <nav class="sideNav" aria-label="Menu">
+    <p class="grp">Affichage</p>
+    <a href="#top">Vue d'ensemble</a>
+    <a href="#opsCard">Opérations</a>
+    <a href="#recvCard">Sommes à percevoir</a>
+    <a href="#budgetCard">Budget prévisionnel</a>
+    <p class="grp">Outils</p>
+    <button id="agBtn">Document d'assemblée générale</button>
+    <button id="exportCsv">Exporter la saison (CSV)</button>
+    <button popovertarget="catMenu">Gérer les catégories</button>
+    <p class="grp">Paramètres</p>
+    <button id="exportJson">Sauvegarder (JSON)</button>
+    <label class="sideBtn">Restaurer une sauvegarde<input type="file" id="importJson" accept=".json" hidden></label>
+    <button id="opening" hidden>Modifier le solde de départ</button>
+    <div class="account">
+      <span id="syncText"></span>
+      <button id="logout">Se déconnecter</button>
+    </div>
+  </nav>
+</aside>
+
+<div class="content">
+<header id="top">
+  <nav id="seasons" aria-label="Saisons"></nav>
 </header>
-<div class="sync">
-  <span id="syncText"></span>
-  <button class="pill small" id="logout">Se déconnecter</button>
-</div>
 
 <main>
   <section class="kpis" id="kpis"></section>
@@ -208,7 +249,7 @@ dialog .row > label { flex: 1; }
   </form>
 
   <div class="cols">
-    <section class="card">
+    <section class="card" id="opsCard">
       <div class="head">
         <div class="label">Opérations <span id="count"></span></div>
         <div class="filters">
@@ -235,7 +276,7 @@ dialog .row > label { flex: 1; }
   </div>
 
   <div class="cols cols2">
-    <section class="card">
+    <section class="card" id="recvCard">
       <div class="head">
         <div class="label">Sommes à percevoir <span id="recvTotal"></span></div>
       </div>
@@ -248,7 +289,7 @@ dialog .row > label { flex: 1; }
       </form>
     </section>
 
-    <section class="card">
+    <section class="card" id="budgetCard">
       <div class="head">
         <div class="label">Budget prévisionnel <span id="budgetSeason"></span></div>
         <button class="pill small" id="budgetCopy"></button>
@@ -264,14 +305,9 @@ dialog .row > label { flex: 1; }
     </section>
   </div>
 
-  <footer>
-    <button class="pill primary" id="agBtn">Télécharger le document d'assemblée générale</button>
-    <button class="pill" id="exportCsv">Exporter la saison (CSV)</button>
-    <button class="pill" id="exportJson">Sauvegarder (JSON)</button>
-    <label class="pill">Restaurer une sauvegarde<input type="file" id="importJson" accept=".json" hidden></label>
-    <button class="pill" id="opening" hidden>Modifier le solde de départ</button>
-  </footer>
 </main>
+</div>
+</div>
 
 <div id="catMenu" popover class="menu">
   <div class="label">Gérer les catégories</div>
@@ -296,7 +332,7 @@ dialog .row > label { flex: 1; }
 
 <div id="gate" class="gate">
   <div class="card">
-    <h1>Compta <span>BCVA</span></h1>
+    <p class="gateTitle">Compta <span>BCVA</span></p>
     <p id="gateText">Chargement…</p>
     <button class="pill primary" id="login" hidden>Se connecter avec Google</button>
     <label class="pill" id="gateImport" hidden>Importer une sauvegarde JSON<input type="file" accept=".json" hidden></label>
@@ -444,7 +480,7 @@ function applyRemote(force) {
   adopt(checkData(JSON.parse(remote.json)));
   rev = remote.rev; remote = null;
   resetForm(); render(); gate();
-  setSync(`Connecté : ${auth.currentUser.email} · à jour à ${time()}`);
+  setSync(`Connecté : ${auth.currentUser.email}\nÀ jour à ${time()}`);
 }
 
 function save() {
@@ -457,7 +493,7 @@ function save() {
       tx.set(docRef, { json, rev: base + 1, par: auth.currentUser.email, le: firebase.firestore.FieldValue.serverTimestamp() });
       return true;
     });
-    if (ok) { rev = base + 1; return setSync(`Connecté : ${auth.currentUser.email} · enregistré à ${time()}`); }
+    if (ok) { rev = base + 1; return setSync(`Connecté : ${auth.currentUser.email}\nEnregistré à ${time()}`); }
     remote = (await docRef.get()).data();
     applyRemote(true);
     alert("Un autre membre du bureau vient d'enregistrer. Ses modifications ont été chargées, mais votre dernière saisie n'a pas été enregistrée : refaites-la.");
@@ -723,9 +759,9 @@ $('#accFilter').onchange = e => { accFilter = e.target.value; render(); };
 function renderReceivables() {
   const list = data.receivables;
   const total = r2(list.reduce((a, r) => a + r.amount, 0));
-  $('#recvTotal').innerHTML = list.length ? `· ${eur.format(total)}` : '';
+  $('#recvTotal').innerHTML = list.length ? `(${eur.format(total)})` : '';
   $('#recv').innerHTML = list.length ? list.map(r => `<li>
-      <div>${esc(r.label)}<span class="note">${esc(r.category)} · ajouté le ${fmtDate(r.date)}</span></div>
+      <div>${esc(r.label)}<span class="note">${esc(r.category)}, ajouté le ${fmtDate(r.date)}</span></div>
       ${amt(r.amount)}
       <button class="pill small" data-get="${r.id}">Encaisser</button>
       <button class="del" data-rrm="${r.id}" title="Supprimer" aria-label="Supprimer">×</button></li>`).join('')
